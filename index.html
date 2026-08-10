@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>USMC Pull-Up Tracker</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: sans-serif;
+    background: #fff;
+    color: #000;
+    margin: 0;
+    padding: 12px;
+    text-align: center;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: rgba(0,0,0,0.3);
+  }
+  h1 { font-size: 18px; margin: 0 0 8px; text-transform: uppercase; }
+
+  .select-container { margin-bottom: 12px; text-align: left; }
+  label { font-size: 12px; font-weight: bold; display: block; margin-bottom: 4px; }
+  select {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    border: 2px solid #000;
+    background: #fff;
+    color: #000;
+  }
+
+  /* Progress Cards */
+  .card {
+    border: 3px solid #000;
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+  .stat-label { font-size: 12px; font-weight: bold; text-align: left; }
+  .stat-val { font-size: 26px; font-weight: bold; margin: 4px 0; }
+
+  .bar-outer {
+    border: 2px solid #000;
+    height: 22px;
+    background: #fff;
+    width: 100%;
+    margin-top: 4px;
+  }
+  .bar-inner {
+    height: 100%;
+    background: #000;
+    width: 0%;
+  }
+
+  /* Action Buttons (+1 / -1) */
+  .act-grid { display: flex; gap: 12px; margin-top: 12px; }
+  .act-btn {
+    flex: 1;
+    padding: 35px 20px;
+    font-size: 28px;
+    font-weight: bold;
+    border: 3px solid #000;
+    background: #fff;
+    color: #000;
+    cursor: pointer;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: rgba(0,0,0,0.3);
+  }
+  .act-btn:first-child {
+    flex: 2;
+    font-size: 32px;
+  }
+  .act-btn:active { background: #000; color: #fff; }
+</style>
+</head>
+<body>
+
+  <h1>USMC Pull-Up Tracker</h1>
+
+  <!-- Level Selection via Official Max Rep Brackets -->
+  <div class="select-container">
+    <label for="max-set-select">CURRENT MAX STRICT PULL-UPS:</label>
+    <select id="max-set-select" onchange="onTierChange(this.value)">
+      <option value="<1" data-daily="25" data-weekly="75">&lt;1 Rep (Target: 25 / 75)</option>
+      <option value="1-5" data-daily="30" data-weekly="90">1 - 5 Reps (Target: 30 / 90)</option>
+      <option value="6-8" data-daily="40" data-weekly="120">6 - 8 Reps (Target: 40 / 120)</option>
+      <option value="9-12" data-daily="50" data-weekly="150">9 - 12 Reps (Target: 50 / 150)</option>
+      <option value="13-16" data-daily="60" data-weekly="180">13 - 16 Reps (Target: 60 / 180)</option>
+      <option value="17-20" data-daily="75" data-weekly="225">17 - 20 Reps (Target: 75 / 225)</option>
+      <option value="21-24" data-daily="100" data-weekly="300">21 - 24 Reps (Target: 100 / 300)</option>
+      <option value="25+" data-daily="150" data-weekly="450">25+ Reps (Target: 150 / 450)</option>
+    </select>
+  </div>
+
+  <!-- Daily Card -->
+  <div class="card">
+    <div class="stat-label">DAILY PROGRESS</div>
+    <div class="stat-val" id="daily-text">0 / 25 (0%)</div>
+    <div class="bar-outer"><div class="bar-inner" id="daily-bar"></div></div>
+  </div>
+
+  <!-- Weekly Card -->
+  <div class="card">
+    <div class="stat-label">WEEKLY PROGRESS</div>
+    <div class="stat-val" id="weekly-text">0 / 75 (0%)</div>
+    <div class="bar-outer"><div class="bar-inner" id="weekly-bar"></div></div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="act-grid">
+    <div class="act-btn" onclick="addReps(1)">+1 REP</div>
+    <div class="act-btn" onclick="addReps(-1)">-1 REP</div>
+  </div>
+
+<script>
+  var targetDaily = 25, targetWeekly = 75;
+  var dailyCount = 0, weeklyCount = 0;
+  var currentTier = '<1';
+
+  function getWeekString(d) {
+    var onejan = new Date(d.getFullYear(), 0, 1);
+    var week = Math.ceil((((d - onejan) / 86400000) + onejan.getDay() + 1) / 7);
+    return d.getFullYear() + '-W' + week;
+  }
+
+  function loadState() {
+    var today = new Date().toISOString().split('T')[0];
+    var thisWeek = getWeekString(new Date());
+
+    var savedStr = localStorage.getItem('usmc_pullups');
+    var saved = savedStr ? JSON.parse(savedStr) : {};
+
+    currentTier = saved.tier || '<1';
+    var selectEl = document.getElementById('max-set-select');
+    selectEl.value = currentTier;
+
+    var opt = selectEl.options[selectEl.selectedIndex];
+    targetDaily = parseInt(opt.getAttribute('data-daily'));
+    targetWeekly = parseInt(opt.getAttribute('data-weekly'));
+
+    dailyCount = (saved.lastDate === today) ? (saved.dailyCount || 0) : 0;
+    weeklyCount = (saved.lastWeek === thisWeek) ? (saved.weeklyCount || 0) : 0;
+
+    render();
+  }
+
+  function saveState() {
+    var today = new Date().toISOString().split('T')[0];
+    var thisWeek = getWeekString(new Date());
+
+    localStorage.setItem('usmc_pullups', JSON.stringify({
+      tier: currentTier,
+      dailyCount: dailyCount,
+      weeklyCount: weeklyCount,
+      lastDate: today,
+      lastWeek: thisWeek
+    }));
+  }
+
+  function onTierChange(val) {
+    currentTier = val;
+    var selectEl = document.getElementById('max-set-select');
+    var opt = selectEl.options[selectEl.selectedIndex];
+
+    targetDaily = parseInt(opt.getAttribute('data-daily'));
+    targetWeekly = parseInt(opt.getAttribute('data-weekly'));
+
+    render();
+    saveState();
+  }
+
+  function addReps(n) {
+    dailyCount = Math.max(0, dailyCount + n);
+    weeklyCount = Math.max(0, weeklyCount + n);
+    render();
+    saveState();
+  }
+
+  function render() {
+    var dPct = Math.min(100, Math.round((dailyCount / targetDaily) * 100));
+    var wPct = Math.min(100, Math.round((weeklyCount / targetWeekly) * 100));
+
+    document.getElementById('daily-text').innerText = dailyCount + ' / ' + targetDaily + ' (' + dPct + '%)';
+    document.getElementById('daily-bar').style.width = dPct + '%';
+
+    document.getElementById('weekly-text').innerText = weeklyCount + ' / ' + targetWeekly + ' (' + wPct + '%)';
+    document.getElementById('weekly-bar').style.width = wPct + '%';
+  }
+
+  loadState();
+</script>
+</body>
+</html>
