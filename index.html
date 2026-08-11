@@ -21,10 +21,34 @@
       -webkit-tap-highlight-color: rgba(0, 0, 0, 0.3);
     }
 
+    .header {
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
     h1 {
       font-size: 18px;
-      margin: 0 0 8px;
+      margin: 0;
+      float: left;
       text-transform: uppercase;
+      text-decoration: underline;
+    }
+
+    .training-link {
+      color: #000;
+      font-weight: bold;
+      text-decoration: none;
+      font-size: 12px;
+      white-space: nowrap;
+      padding: 6px 10px;
+      border: 2px solid #000;
+      background: #fff;
+      float: right;
+    }
+
+    .training-link:active {
+      background: #000;
+      color: #fff;
     }
 
     .select-container {
@@ -51,7 +75,7 @@
 
     /* Progress Cards */
     .card {
-      border: 3px solid #000;
+      border: 1px solid #000;
       padding: 10px;
       margin-bottom: 10px;
     }
@@ -90,7 +114,7 @@
 
     .act-btn {
       float: left;
-      padding: 35px 20px;
+      padding: 35px 10px;
       font-size: 28px;
       font-weight: bold;
       border: 3px solid #000;
@@ -102,6 +126,9 @@
       -webkit-user-select: none;
       -webkit-tap-highlight-color: rgba(0, 0, 0, 0.3);
       text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      line-height: 1.2;
     }
 
     .act-btn:first-child {
@@ -123,20 +150,23 @@
 
 <body>
 
-  <h1>USMC Pull-Up Tracker</h1>
+  <div class="header">
+    <h1>USMC Pull-Up Tracker</h1>
+    <a href="PullupTrainingGuide.pdf" target="_blank" class="training-link">📄 Training guide</a>
+  </div>
 
   <!-- Level Selection via Official Max Rep Brackets -->
   <div class="select-container">
     <label for="max-set-select">CURRENT MAX STRICT PULL-UPS:</label>
     <select id="max-set-select" onchange="onTierChange(this.value)">
-      <option value="<1" data-daily="25" data-weekly="75">&lt;1 Rep (Target: 25 / 75)</option>
-      <option value="1-5" data-daily="30" data-weekly="90">1 - 5 Reps (Target: 30 / 90)</option>
-      <option value="6-8" data-daily="40" data-weekly="120">6 - 8 Reps (Target: 40 / 120)</option>
-      <option value="9-12" data-daily="50" data-weekly="150">9 - 12 Reps (Target: 50 / 150)</option>
-      <option value="13-16" data-daily="60" data-weekly="180">13 - 16 Reps (Target: 60 / 180)</option>
-      <option value="17-20" data-daily="75" data-weekly="225">17 - 20 Reps (Target: 75 / 225)</option>
-      <option value="21-24" data-daily="100" data-weekly="300">21 - 24 Reps (Target: 100 / 300)</option>
-      <option value="25+" data-daily="150" data-weekly="450">25+ Reps (Target: 150 / 450)</option>
+      <option value="<1" data-daily="25" data-weekly="75" data-training-set="~3 progressions" data-straight="X sets of 3 progressions" data-ladder="1-2-3" data-pyramid="1-2-3-2-1">&lt;1 Rep (Target: 25 / 75)</option>
+      <option value="1-5" data-daily="30" data-weekly="90" data-training-set="~1" data-straight="5 sets of 1" data-ladder="1-2-3" data-pyramid="1-2-3-2-1">1 - 5 Reps (Target: 30 / 90)</option>
+      <option value="6-8" data-daily="40" data-weekly="120" data-training-set="~2" data-straight="5 sets of 2" data-ladder="1-2" data-pyramid="1-2-1">6 - 8 Reps (Target: 40 / 120)</option>
+      <option value="9-12" data-daily="50" data-weekly="150" data-training-set="~3" data-straight="5 sets of 3" data-ladder="1-2-3" data-pyramid="1-2-3-2-1">9 - 12 Reps (Target: 50 / 150)</option>
+      <option value="13-16" data-daily="60" data-weekly="180" data-training-set="~4" data-straight="5 sets of 4" data-ladder="1-2-3-4" data-pyramid="1-2-3-4-3-2-1">13 - 16 Reps (Target: 60 / 180)</option>
+      <option value="17-20" data-daily="75" data-weekly="225" data-training-set="~5" data-straight="5 sets of 5" data-ladder="1-2-3-4-5" data-pyramid="1-2-3-4-5-4-3-2-1">17 - 20 Reps (Target: 75 / 225)</option>
+      <option value="21-24" data-daily="100" data-weekly="300" data-training-set="~6" data-straight="5 sets of 6" data-ladder="1-2-3-4-5-6" data-pyramid="1-2-3-4-5-6-5-4-3-2-1">21 - 24 Reps (Target: 100 / 300)</option>
+      <option value="25+" data-daily="150" data-weekly="450" data-training-set="~7+" data-straight="5 sets of 7+" data-ladder="1-2-3-4-5-6-7" data-pyramid="1-2-3-4-5-6-7-6-5-4-3-2-1">25+ Reps (Target: 150 / 450)</option>
     </select>
   </div>
 
@@ -155,6 +185,31 @@
     <div class="stat-val" id="weekly-text">0 / 75 (0%)</div>
     <div class="bar-outer">
       <div class="bar-inner" id="weekly-bar"></div>
+    </div>
+  </div>
+
+  <!-- Rep Schemes -->
+  <div class="card">
+    <div class="stat-label">REP SCHEMES</div>
+    <div style="overflow:hidden;margin-top:8px;text-align:left;font-size:14px;">
+      <div style="float:left;width:30%;border-right:2px solid #000;padding-right:10px;">
+        <div style="font-weight:bold;margin-bottom:4px;">Training Set</div>
+        <div style="font-size:20px;font-weight:bold;" id="training-set">~1</div>
+      </div>
+      <div style="float:right;width:68%;overflow:hidden;">
+        <div style="float:left;width:32%;padding-left:8px;">
+          <div style="font-weight:bold;margin-bottom:4px;">Straight</div>
+          <div id="straight-reps">5 sets of 1</div>
+        </div>
+        <div style="float:left;width:32%;padding-left:8px;">
+          <div style="font-weight:bold;margin-bottom:4px;">Ladder</div>
+          <div id="ladder-reps">1-2-3</div>
+        </div>
+        <div style="float:left;width:32%;padding-left:8px;">
+          <div style="font-weight:bold;margin-bottom:4px;">Pyramid</div>
+          <div id="pyramid-reps">1-2-3-2-1</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -256,6 +311,13 @@
       document.getElementById('weekly-text').innerText=weeklyCount+' / '+targetWeekly+' ('+wPct+'%)';
       document.getElementById('weekly-bar').style.width=wPct+'%';
       document.getElementById('date-debug').innerText='('+getCurrentDate()+')';
+
+      var selectEl=document.getElementById('max-set-select');
+      var opt=selectEl.options[selectEl.selectedIndex];
+      document.getElementById('training-set').innerText=opt.getAttribute('data-training-set')||'~1';
+      document.getElementById('straight-reps').innerText=opt.getAttribute('data-straight')||'5 sets of 1';
+      document.getElementById('ladder-reps').innerText=opt.getAttribute('data-ladder')||'1-2-3';
+      document.getElementById('pyramid-reps').innerText=opt.getAttribute('data-pyramid')||'1-2-3-2-1';
     }
 
     document.addEventListener('visibilitychange',function(){
