@@ -145,7 +145,7 @@
 
   <!-- Daily Card -->
   <div class="card">
-    <div class="stat-label">DAILY PROGRESS</div>
+    <div class="stat-label">DAILY PROGRESS <span id="date-debug" style="font-size:10px;font-weight:normal;"></span></div>
     <div class="stat-val" id="daily-text">0 / 25 (0%)</div>
     <div class="bar-outer">
       <div class="bar-inner" id="daily-bar"></div>
@@ -172,46 +172,37 @@
     var dailyCount=0,weeklyCount=0;
     var currentTier='<1';
 
-    function getWeekString(d) {
-      var onejan=new Date(d.getFullYear(),0,1);
-      var week=Math.ceil((((d-onejan)/86400000)+onejan.getDay()+1)/7);
-      return d.getFullYear()+'-W'+week;
+    function getCurrentDate() {
+      return (new Date()).toISOString().split('T')[0];
+    }
+
+    function getCurrentWeek() {
+      var d=new Date(),onejan=new Date(d.getFullYear(),0,1);
+      return d.getFullYear()+'-W'+Math.ceil((((d-onejan)/86400000)+onejan.getDay()+1)/7);
     }
 
     function checkAndResetDates() {
-      var today=new Date().toISOString().split('T')[0];
-      var thisWeek=getWeekString(new Date());
-
+      var today=getCurrentDate(),thisWeek=getCurrentWeek();
       var savedStr=localStorage.getItem('usmc_pullups');
-      if(!savedStr) return;
+      if(!savedStr) return false;
 
       var saved=JSON.parse(savedStr);
-      var needsUpdate=false;
+      var reset=false;
 
-      // Reset daily count if date changed
       if(saved.lastDate&&saved.lastDate!==today) {
         dailyCount=0;
-        needsUpdate=true;
+        reset=true;
       }
-
-      // Reset weekly count if week changed
       if(saved.lastWeek&&saved.lastWeek!==thisWeek) {
         weeklyCount=0;
-        needsUpdate=true;
+        reset=true;
       }
-
-      if(needsUpdate) {
-        render();
-        saveState();
-      }
+      return reset;
     }
 
     function loadState() {
-      var today=new Date().toISOString().split('T')[0];
-      var thisWeek=getWeekString(new Date());
-
       var savedStr=localStorage.getItem('usmc_pullups');
-      var saved=savedStr? JSON.parse(savedStr):{};
+      var saved=savedStr?JSON.parse(savedStr):{};
 
       currentTier=saved.tier||'<1';
       var selectEl=document.getElementById('max-set-select');
@@ -221,40 +212,39 @@
       targetDaily=parseInt(opt.getAttribute('data-daily'));
       targetWeekly=parseInt(opt.getAttribute('data-weekly'));
 
-      dailyCount=(saved.lastDate===today)? (saved.dailyCount||0):0;
-      weeklyCount=(saved.lastWeek===thisWeek)? (saved.weeklyCount||0):0;
-
-      render();
+      if(checkAndResetDates()) {
+        render();
+        saveState();
+      } else {
+        dailyCount=saved.dailyCount||0;
+        weeklyCount=saved.weeklyCount||0;
+        render();
+      }
     }
 
     function saveState() {
-      var today=new Date().toISOString().split('T')[0];
-      var thisWeek=getWeekString(new Date());
-
       localStorage.setItem('usmc_pullups',JSON.stringify({
-        tier: currentTier,
-        dailyCount: dailyCount,
-        weeklyCount: weeklyCount,
-        lastDate: today,
-        lastWeek: thisWeek
+        tier:currentTier,
+        dailyCount:dailyCount,
+        weeklyCount:weeklyCount,
+        lastDate:getCurrentDate(),
+        lastWeek:getCurrentWeek()
       }));
     }
 
     function onTierChange(val) {
-      checkAndResetDates();
+      if(checkAndResetDates()) saveState();
       currentTier=val;
       var selectEl=document.getElementById('max-set-select');
       var opt=selectEl.options[selectEl.selectedIndex];
-
       targetDaily=parseInt(opt.getAttribute('data-daily'));
       targetWeekly=parseInt(opt.getAttribute('data-weekly'));
-
       render();
       saveState();
     }
 
     function addReps(n) {
-      checkAndResetDates();
+      if(checkAndResetDates()) saveState();
       dailyCount=Math.max(0,dailyCount+n);
       weeklyCount=Math.max(0,weeklyCount+n);
       render();
@@ -264,13 +254,26 @@
     function render() {
       var dPct=Math.min(100,Math.round((dailyCount/targetDaily)*100));
       var wPct=Math.min(100,Math.round((weeklyCount/targetWeekly)*100));
-
       document.getElementById('daily-text').innerText=dailyCount+' / '+targetDaily+' ('+dPct+'%)';
       document.getElementById('daily-bar').style.width=dPct+'%';
-
       document.getElementById('weekly-text').innerText=weeklyCount+' / '+targetWeekly+' ('+wPct+'%)';
       document.getElementById('weekly-bar').style.width=wPct+'%';
+      document.getElementById('date-debug').innerText='('+getCurrentDate()+')';
     }
+
+    document.addEventListener('visibilitychange',function(){
+      if(!document.hidden&&checkAndResetDates()){
+        render();
+        saveState();
+      }
+    });
+
+    window.addEventListener('focus',function(){
+      if(checkAndResetDates()){
+        render();
+        saveState();
+      }
+    });
 
     loadState();
   </script>
