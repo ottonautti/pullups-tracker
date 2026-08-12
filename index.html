@@ -223,6 +223,7 @@
     var targetDaily=25,targetWeekly=75;
     var dailyCount=0,weeklyCount=0;
     var currentTier='<1';
+    var saveTimeout=null;
 
     function getCurrentDate() {
       return (new Date()).toISOString().split('T')[0];
@@ -284,6 +285,14 @@
       }));
     }
 
+    function debouncedSave() {
+      if(saveTimeout) clearTimeout(saveTimeout);
+      saveTimeout=setTimeout(function(){
+        saveState();
+        saveTimeout=null;
+      },2000);
+    }
+
     function onTierChange(val) {
       if(checkAndResetDates()) saveState();
       currentTier=val;
@@ -292,15 +301,15 @@
       targetDaily=parseInt(opt.getAttribute('data-daily'));
       targetWeekly=parseInt(opt.getAttribute('data-weekly'));
       render();
-      saveState();
+      debouncedSave();
     }
 
     function addReps(n) {
-      if(checkAndResetDates()) saveState();
+      if(checkAndResetDates()) debouncedSave();
       dailyCount=Math.max(0,dailyCount+n);
       weeklyCount=Math.max(0,weeklyCount+n);
       render();
-      saveState();
+      debouncedSave();
     }
 
     function render() {
@@ -324,12 +333,29 @@
       if(!document.hidden&&checkAndResetDates()){
         render();
         saveState();
+      } else if(document.hidden&&saveTimeout) {
+        clearTimeout(saveTimeout);
+        saveState();
       }
     });
 
     window.addEventListener('focus',function(){
       if(checkAndResetDates()){
         render();
+        saveState();
+      }
+    });
+
+    window.addEventListener('blur',function(){
+      if(saveTimeout) {
+        clearTimeout(saveTimeout);
+        saveState();
+      }
+    });
+
+    window.addEventListener('beforeunload',function(){
+      if(saveTimeout) {
+        clearTimeout(saveTimeout);
         saveState();
       }
     });
